@@ -7,19 +7,96 @@ output:
 
 
 ## Loading and preprocessing the data
+```{r, echo = TRUE}
+rawFileDirectory ="C:/Users/jieli/Documents/ReproducibleResearch"
+setwd(rawFileDirectory)
+getwd()
+activityDataSet <- read.csv("activity.csv")
+activityDataSet$date <-as.Date(activityDataSet$date)
+colnames(activityDataSet)<-c("steps","date", "Interval")
+str(activityDataSet)
+
+```
 
 
 
 ## What is mean total number of steps taken per day?
+```{r, echo=TRUE}
+dailyActivityDataSet<-aggregate(activityDataSet$steps,by=list(activityDataSet$date),sum)
+colnames(dailyActivityDataSet) <-c("date", "step")
 
+library("ggplot2")
+qplot(x, data=dailyActivityDataSet, geom="histogram", main="histogram of the total number of steps taken each day", xlab="number of steps")
+
+meanActivityDataSet<-aggregate(activityDataSet$steps,by=list(activityDataSet$date),mean)
+colnames(meanActivityDataSet)<-c("Date", "Mean")
+meanActivityDataSet
+
+medianActivityDataSet<-aggregate(activityDataSet$steps,
+                                 by=list(activityDataSet$date),
+                                 median)
+colnames(medianActivityDataSet)<-c("Date", "Median")
+medianActivityDataSet
+
+```
 
 
 ## What is the average daily activity pattern?
 
+```{r, echo=TRUE}
+
+intervalMeanActivityDataSet<-aggregate(activityDataSet$steps,by=list(activityDataSet$interval),mean,na.rm = TRUE)
+colnames(intervalMeanActivityDataSet)<-c("Interval", "Mean")
+
+plot(intervalMeanActivityDataSet$Interval,
+     intervalMeanActivityDataSet$Mean,
+     type="n",
+     main="Time Series Plot of every 5-minute interval",
+     xlab = "5-minute intervals",
+     ylab = "Average number of steps taken")
+
+lines(intervalMeanActivityDataSet$Interval,
+      intervalMeanActivityDataSet$Mean,
+      type="l")
+
+maxAverageStepByInterval<- intervalMeanActivityDataSet[which.max(intervalMeanActivityDataSet$Mean),1]
+
+maxAverageStepByInterval
+
+```
 
 
 ## Imputing missing values
 
 
+```{r, echo=TRUE}
+
+totalMissingValue <-sum(is.na(activityDataSet$steps))
+totalMissingValue
+
+
+missingActivityDataSet <- merge(activityDataSet,
+                                intervalMeanActivityDataSet,
+                                by = "Interval",
+                                sort= FALSE)
+
+missingActivityDataSet$steps[is.na(missingActivityDataSet$steps)] <- missingActivityDataSet$Mean[is.na(missingActivityDataSet$steps)]
+newActivityDataSet <-missingActivityDataSet[,-4]
+newActivityDataSet
+
+newDailyActivityDataSet <- aggregate(newActivityDataSet$steps, by=list(newActivityDataSet$date), sum)
+names(newDailyActivityDataSet)[1] <-"day"
+names(newDailyActivityDataSet)[2] <-"steps"
+
+hist(newDailyActivityDataSet$steps,
+     main = "histogram of the total number of steps taken each day (NA replaced by the interval mean)",
+     xlab = "total number of steps taken each day")
+ww
+mean(newDailyActivityDataSet$steps)
+mean(dailyActivityDataSet$step, na.rm=TRUE)
+
+median(newDailyActivityDataSet$steps)
+median(dailyActivityDataSet$step, na.rm=TRUE)
+```
 
 ## Are there differences in activity patterns between weekdays and weekends?
